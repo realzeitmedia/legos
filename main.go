@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -28,9 +27,13 @@ var (
 func main() {
 	flag.Parse()
 
-	lineReg := regexp.MustCompile(*lineRegexp) // TODO: nicer error
+	lineReg, err := regexp.Compile(*lineRegexp)
+	if err != nil {
+		fmt.Printf("invalid -regexp: %s\n", err)
+		os.Exit(1)
+	}
 	if *verbose {
-		fmt.Printf("using regexp: %q\n", lineRegexp)
+		fmt.Printf("using regexp: %q\n", *lineRegexp)
 	}
 
 	es := bubbles.New(strings.Split(*hosts, ","),
@@ -43,22 +46,18 @@ func main() {
 	}()
 
 	var (
-		r   = bufio.NewReader(os.Stdin)
-		l   string
-		err error
+		r       = bufio.NewScanner(bufio.NewReader(os.Stdin))
+		subexps = lineReg.SubexpNames()
 	)
-	subexps := lineReg.SubexpNames()
-	for ; err == nil; l, err = r.ReadString('\n') {
-		if l == "" {
-			continue
-		}
+	for r.Scan() {
+		l := r.Text()
 		if *verbose {
 			fmt.Printf("line: %q\n", l)
 		}
 
 		t := time.Now()
 		fields := map[string]string{
-			"@timestamp": t.Format(time.RFC3339), // almost: 2016-01-19T09:33:45+01:00
+			"@timestamp": t.Format(time.RFC3339Nano),
 			"message":    l,
 		}
 		if m := lineReg.FindStringSubmatch(l); m != nil {
@@ -71,8 +70,8 @@ func main() {
 		}
 		index := t.Format(*indexTmpl)
 		if *verbose {
-			fmt.Printf("Index: %s\n", index)
-			fmt.Printf("Fields:\n")
+			fmt.Printf("index: %s\n", index)
+			fmt.Printf("fields:\n")
 			for n, v := range fields {
 				fmt.Printf("  %s: %q\n", n, v)
 			}
@@ -92,8 +91,5 @@ func main() {
 			},
 			Document: string(doc),
 		}
-	}
-	if err != io.EOF {
-		fmt.Printf("error: %s", err)
 	}
 }
