@@ -21,7 +21,7 @@ var (
 	indexTmpl  = flag.String("index", "logstash-20060102", "index name")
 	hosts      = flag.String("hosts", "localhost:9200", "ES hosts (,)")
 	lineRegexp = flag.String("regexp", glog, "regexp with capture groups")
-	verbose    = flag.Bool("verbose", true, "verbose")
+	verbose    = flag.Bool("verbose", false, "verbose")
 )
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 
 	lineReg, err := regexp.Compile(*lineRegexp)
 	if err != nil {
-		fmt.Printf("invalid -regexp: %s\n", err)
+		fmt.Fprintf(os.Stderr, "invalid -regexp: %s\n", err)
 		os.Exit(1)
 	}
 	if *verbose {
@@ -41,7 +41,9 @@ func main() {
 	)
 
 	defer func() {
-		fmt.Printf("shutting down...\n")
+		if *verbose {
+			fmt.Printf("shutting down...\n")
+		}
 		time.Sleep(2 * time.Second) // more than the ES flush time
 	}()
 
