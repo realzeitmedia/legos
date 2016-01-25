@@ -22,15 +22,21 @@ var (
 	hosts      = flag.String("hosts", "localhost:9200", "ES hosts (,)")
 	lineRegexp = flag.String("regexp", glog, "regexp with capture groups")
 	verbose    = flag.Bool("verbose", false, "verbose")
+	copy       = flag.Bool("copy", false, "copy all lines to STDOUT")
 )
 
 func main() {
 	flag.Parse()
 
+	if *copy && *verbose {
+		fmt.Fprintf(os.Stderr, "can't enable both -verbose and -copy\n")
+		os.Exit(1)
+	}
+
 	lineReg, err := regexp.Compile(*lineRegexp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "invalid -regexp: %s\n", err)
-		os.Exit(1)
+		os.Exit(2)
 	}
 	if *verbose {
 		fmt.Printf("using regexp: %q\n", *lineRegexp)
@@ -55,6 +61,9 @@ func main() {
 		l := r.Text()
 		if *verbose {
 			fmt.Printf("line: %q\n", l)
+		}
+		if *copy {
+			fmt.Println(l)
 		}
 
 		t := time.Now()
