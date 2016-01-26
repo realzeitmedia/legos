@@ -27,6 +27,10 @@ var (
 
 func main() {
 	flag.Parse()
+	if len(flag.Args()) > 0 {
+		fmt.Fprintf(os.Stderr, "too many arguments\n")
+		os.Exit(1)
+	}
 
 	if *copy && *verbose {
 		fmt.Fprintf(os.Stderr, "can't enable both -verbose and -copy\n")
