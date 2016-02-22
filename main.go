@@ -18,11 +18,20 @@ const (
 )
 
 var (
-	indexTmpl  = flag.String("index", "logstash-20060102", "index name")
-	hosts      = flag.String("hosts", "localhost:9200", "ES hosts (,)")
-	lineRegexp = flag.String("regexp", glog, "regexp with capture groups")
-	verbose    = flag.Bool("verbose", false, "verbose")
-	copy       = flag.Bool("copy", false, "copy all lines to STDOUT")
+	namedRegexpes = [][2]string{
+		{"glog", glog},
+		{"debug", `(?P<msg>)`},
+	}
+)
+
+var (
+	indexTmpl   = flag.String("index", "logstash-20060102", "index name")
+	hosts       = flag.String("hosts", "localhost:9200", "ES hosts (,)")
+	lineRegexp  = flag.String("regexp", glog, "freeform regexp with capture groups")
+	namedRegexp = flag.String("named", "", "predefined regexp, see -list. overrules -regexp")
+	verbose     = flag.Bool("verbose", false, "verbose")
+	copy        = flag.Bool("copy", false, "copy all lines to STDOUT")
+	list        = flag.Bool("list", false, "list all named regexpes and exit")
 )
 
 func main() {
@@ -32,18 +41,41 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *list {
+		fmt.Printf("regexps available for -named:\n")
+		for _, e := range namedRegexpes {
+			fmt.Printf("  -named=%s -> `%s`\n", e[0], e[1])
+		}
+		return
+	}
+
 	if *copy && *verbose {
 		fmt.Fprintf(os.Stderr, "can't enable both -verbose and -copy\n")
 		os.Exit(1)
 	}
 
-	lineReg, err := regexp.Compile(*lineRegexp)
+	var lreg = *lineRegexp
+	if *namedRegexp != "" {
+		for _, e := range namedRegexpes {
+			if e[0] == *namedRegexp {
+				lreg = e[1]
+				break
+			}
+		}
+
+	}
+	if lreg == "" {
+		fmt.Fprintf(os.Stderr, "no regexp give. Use either -named or -regexp\n")
+		os.Exit(2)
+	}
+
+	lineReg, err := regexp.Compile(lreg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "invalid -regexp: %s\n", err)
 		os.Exit(2)
 	}
 	if *verbose {
-		fmt.Printf("using regexp: %q\n", *lineRegexp)
+		fmt.Printf("using regexp: %q\n", lreg)
 	}
 
 	es := bubbles.New(strings.Split(*hosts, ","),
