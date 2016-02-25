@@ -35,19 +35,18 @@ const (
 	// ):
 	//   vendor/bundle/ruby/2.1.0/gems/activerecord-4.0.2/lib/active_record/connection_adapters/postgresql_adapter.rb:831:in `initialize'
 	rails = `^[DIEF], \[.*\]\s+(?P<level>\w+)\s+-- : (?P<msg>.*)$`
+
+	MaxFieldLength = 30000 // ES doesn't like more than 32K
 )
 
 var (
 	namedRegexpes = [][3]string{
 		{"glog", glog, "go glog formats"},
-		{"debug", `(?P<msg>)`, "example"},
+		{"example", `(?P<msg>.{0,10})`, "example"},
 		{"nginx", nginx, "nginx access logs"},
 		{"nginxerror", nginxerror, "nginx error logs"},
 		{"rails", rails, "basic rails output. Ignores multiline errors"},
 	}
-)
-
-var (
 	indexTmpl   = flag.String("index", "logstash-20060102", "index name")
 	hosts       = flag.String("hosts", "localhost:9200", "ES hosts (,)")
 	lineRegexp  = flag.String("regexp", glog, "freeform regexp with capture groups")
@@ -56,6 +55,14 @@ var (
 	copy        = flag.Bool("copy", false, "copy all lines to STDOUT")
 	list        = flag.Bool("list", false, "list all named regexpes and exit")
 )
+
+// limit the length of a string to
+func limit(s string) string {
+	if len(s) > MaxFieldLength {
+		s = s[:MaxFieldLength] + "..."
+	}
+	return s
+}
 
 func main() {
 	flag.Parse()
@@ -128,14 +135,14 @@ func main() {
 		t := time.Now()
 		fields := map[string]string{
 			"@timestamp": t.Format(time.RFC3339Nano),
-			"message":    l,
+			"message":    limit(l),
 		}
 		if m := lineReg.FindStringSubmatch(l); m != nil {
 			for i, v := range m {
 				if i == 0 {
 					continue
 				}
-				fields[subexps[i]] = v
+				fields[subexps[i]] = limit(v)
 			}
 		}
 		index := t.Format(*indexTmpl)
