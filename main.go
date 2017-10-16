@@ -159,7 +159,7 @@ func main() {
 			panic(fmt.Sprintf("encode error: %s\n", err))
 		}
 
-		es.Enqueue() <- bubbles.Action{
+		es.Enqueue(bubbles.Action{
 			Type: bubbles.Index,
 			MetaData: bubbles.MetaData{
 				Index: index,
@@ -167,6 +167,6 @@ func main() {
 				// no ID
 			},
 			Document: string(doc),
-		}
+		})
 	}
 }
