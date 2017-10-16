@@ -2,9 +2,13 @@ Legos
 
 Minimal Elasticsearch log shipper. Logstash compatible; Works great with Kibana.
 
+Usage:
+
+ - legos /var/log/some/log
+
 Process:
 
- - Read line in from STDIN
+ - Wait for a new line in /var/log/some/log
  - Get fields via a regular expression
  - Send record to Elasticsearch
  - GOTO 0

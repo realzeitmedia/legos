@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hpcloud/tail"
 	"github.com/realzeitmedia/bubbles"
 )
 
@@ -52,7 +52,6 @@ var (
 	lineRegexp  = flag.String("regexp", glog, "freeform regexp with capture groups")
 	namedRegexp = flag.String("named", "", "predefined regexp, see -list. overrules -regexp")
 	verbose     = flag.Bool("verbose", false, "verbose")
-	copy        = flag.Bool("copy", false, "copy all lines to STDOUT")
 	list        = flag.Bool("list", false, "list all named regexpes and exit")
 )
 
@@ -66,10 +65,11 @@ func limit(s string) string {
 
 func main() {
 	flag.Parse()
-	if len(flag.Args()) > 0 {
-		fmt.Fprintf(os.Stderr, "too many arguments\n")
+	if len(flag.Args()) != 1 {
+		fmt.Fprintf(os.Stderr, "need a single argument, the logfile")
 		os.Exit(1)
 	}
+	logfile := flag.Args()[0]
 
 	if *list {
 		fmt.Printf("regexps available for -named:\n")
@@ -77,11 +77,6 @@ func main() {
 			fmt.Printf("  -named=%s\n   desc: %s\n   regexp: /%s/\n", e[0], e[2], e[1])
 		}
 		return
-	}
-
-	if *copy && *verbose {
-		fmt.Fprintf(os.Stderr, "can't enable both -verbose and -copy\n")
-		os.Exit(1)
 	}
 
 	var lreg = *lineRegexp
@@ -119,25 +114,35 @@ func main() {
 		time.Sleep(2 * time.Second) // more than the ES flush time
 	}()
 
+	t, err := tail.TailFile(logfile, tail.Config{
+		ReOpen: true,
+		Follow: true,
+		Logger: tail.DiscardingLogger,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "opening file: %s\n", err)
+		os.Exit(3)
+	}
+	defer t.Stop()
+
 	var (
-		r       = bufio.NewScanner(bufio.NewReader(os.Stdin))
 		subexps = lineReg.SubexpNames()
 	)
-	for r.Scan() {
-		l := r.Text()
-		if *verbose {
-			fmt.Printf("line: %q\n", l)
+	for l := range t.Lines {
+		if l.Err != nil {
+			fmt.Fprintf(os.Stderr, "read err: %s\n", l.Err)
+			return
 		}
-		if *copy {
-			fmt.Println(l)
+		if *verbose {
+			fmt.Printf("line: %q\n", l.Text)
 		}
 
 		t := time.Now()
 		fields := map[string]string{
 			"@timestamp": t.Format(time.RFC3339Nano),
-			"message":    limit(l),
+			"message":    limit(l.Text),
 		}
-		if m := lineReg.FindStringSubmatch(l); m != nil {
+		if m := lineReg.FindStringSubmatch(l.Text); m != nil {
 			for i, v := range m {
 				if i == 0 {
 					continue
