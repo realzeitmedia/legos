@@ -1,0 +1,25 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "SiWndUj5C5ttcIhNOKIrb/prH9A=",
+			"path": "github.com/alicebob/json",
+			"revision": "83f522cdd5728268ddddadf062194dc39ce8ec14",
+			"revisionTime": "2016-02-17T21:01:25Z"
+		},
+		{
+			"checksumSHA1": "u60gzXOAzBdf4xe9R93xR63RpT0=",
+			"path": "github.com/realzeitmedia/bubbles",
+			"revision": "7d0b8e93819ce789114929ead5ac8b25ac3c2f4e",
+			"revisionTime": "2016-07-11T15:35:37Z"
+		},
+		{
+			"checksumSHA1": "/+2fMdf15Qi46K5oTCvNi2jtpaI=",
+			"path": "github.com/realzeitmedia/bubbles/loges",
+			"revision": "7d0b8e93819ce789114929ead5ac8b25ac3c2f4e",
+			"revisionTime": "2016-07-11T15:35:37Z"
+		}
+	],
+	"rootPath": "github.com/realzeitmedia/legos"
+}
