@@ -15,7 +15,8 @@ import (
 
 const (
 	// Go glog logs
-	glog = `^\S+ \S+ \S+\s+\d+ (?P<file>.+):\d+\] (?P<msg>(?P<msgcore>.*?:)?.*)`
+	// E1017 07:59:34.060321    8498 events.go:45] some message
+	glog = `^[IEF]\d+ \S+\s+\d+ (?P<file>.+):\d+\] (?P<msg>(?P<msgcore>.*?:)?.*)`
 
 	// Nginx access logs
 	// 1.2.3.4 - - [18/Feb/2016:10:05:22 +0000] "GET /client/assets/some.css HTTP/1.1" 200 1090 "https://somereferer" "Mozilla/5.0 (Linux; Android 5.1.1; D6603 Build/23.4.A.1.264; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/47.0.2526.100 Mobile Safari/537.36 (Mobile; afma-sdk-a-v8489000.7327000.1)"
